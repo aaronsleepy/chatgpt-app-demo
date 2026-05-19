@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>크몽 서비스 검색</title>
+    <style>
+      :root {
+        --kmong-primary: #3045ff;
+        --kmong-accent: #ff5c00;
+        --kmong-star: #ffc107;
+        --kmong-muted: #6c768a;
+        --kmong-text: #11141b;
+        --kmong-bg: #f6f8fb;
+        --kmong-card: #ffffff;
+        --kmong-border: #e5e8ef;
+        color: var(--kmong-text);
+        font-family:
+          system-ui,
+          "Pretendard",
+          "Apple SD Gothic Neo",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        padding: 16px;
+        background: var(--kmong-bg);
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .header h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      .header .keyword {
+        color: var(--kmong-primary);
+      }
+
+      .back-button {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--kmong-primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 8px 0;
+        cursor: pointer;
+      }
+
+      .back-button:hover {
+        text-decoration: underline;
+      }
+
+      .empty {
+        padding: 32px 16px;
+        text-align: center;
+        color: var(--kmong-muted);
+        background: var(--kmong-card);
+        border-radius: 12px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      @media (max-width: 480px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--kmong-card);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+      }
+
+      .card[data-busy="true"] {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .thumb {
+        position: relative;
+        width: 100%;
+        padding-top: 100%;
+        background: #eef0f5;
+        overflow: hidden;
+      }
+
+      .thumb img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .badge-prime {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: var(--kmong-accent);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 7px;
+        border-radius: 4px;
+        letter-spacing: 0.02em;
+      }
+
+      .card-body {
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .chip {
+        align-self: flex-start;
+        font-size: 0.7rem;
+        color: var(--kmong-muted);
+        background: #f2f4f8;
+        border-radius: 4px;
+        padding: 2px 6px;
+      }
+
+      .card-title {
+        font-size: 0.9rem;
+        line-height: 1.35;
+        font-weight: 500;
+        color: var(--kmong-text);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .seller-line {
+        font-size: 0.78rem;
+        color: var(--kmong-muted);
+      }
+
+      .rating {
+        font-size: 0.78rem;
+        color: var(--kmong-text);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .star {
+        color: var(--kmong-star);
+        font-size: 0.85rem;
+        line-height: 1;
+      }
+
+      .review-count {
+        color: var(--kmong-muted);
+      }
+
+      .price {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--kmong-text);
+        margin-top: 2px;
+      }
+
+      .price small {
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--kmong-muted);
+        margin-right: 4px;
+      }
+
+      .error {
+        background: #fff3f3;
+        color: #b91c1c;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+      }
+
+      .detail {
+        background: var(--kmong-card);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+      }
+
+      .detail-hero {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #eef0f5;
+        overflow: hidden;
+      }
+
+      .detail-hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .detail-gallery {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 8px 14px 0;
+      }
+
+      .detail-gallery img {
+        width: 72px;
+        height: 72px;
+        border-radius: 8px;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 1px solid var(--kmong-border);
+      }
+
+      .detail-body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .breadcrumb {
+        font-size: 0.78rem;
+        color: var(--kmong-muted);
+      }
+
+      .detail-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.4;
+        margin: 0;
+      }
+
+      .meta-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .meta-badge {
+        background: var(--kmong-accent);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 7px;
+        border-radius: 4px;
+      }
+
+      .detail-price {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--kmong-text);
+      }
+
+      .seller-card {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        background: #f7f8fb;
+        padding: 12px;
+        border-radius: 10px;
+      }
+
+      .seller-card .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #e2e6ee;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .seller-card .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .seller-card .info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .seller-card .nickname {
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+
+      .seller-card .grade {
+        font-size: 0.75rem;
+        color: var(--kmong-muted);
+      }
+
+      .packages {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      @media (max-width: 480px) {
+        .packages {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .package {
+        border: 1px solid var(--kmong-border);
+        border-radius: 10px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .package h4 {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--kmong-primary);
+        letter-spacing: 0.04em;
+      }
+
+      .package .pkg-price {
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .package .pkg-days {
+        font-size: 0.75rem;
+        color: var(--kmong-muted);
+      }
+
+      .package .pkg-desc {
+        font-size: 0.78rem;
+        color: var(--kmong-text);
+        line-height: 1.4;
+        white-space: pre-line;
+      }
+
+      .external-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--kmong-primary);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 12px 16px;
+        border-radius: 10px;
+      }
+
+      details.description {
+        background: #fafbfd;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        color: var(--kmong-text);
+      }
+
+      details.description summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--kmong-primary);
+      }
+
+      details.description .desc-body {
+        margin-top: 10px;
+        line-height: 1.5;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      details.description img {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="root"></main>
+
+    <script type="module">
+      const rootEl = document.querySelector("#root");
+
+      let view = "list";
+      let listData = { keyword: "", gigs: [] };
+      let detailData = null;
+      let errorMessage = "";
+      let busyGigId = null;
+
+      const escapeHtml = (str) =>
+        String(str ?? "").replace(/[&<>"']/g, (c) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+        );
+
+      const formatPrice = (n) => {
+        const num = Number(n) || 0;
+        return num.toLocaleString("ko-KR") + "원";
+      };
+
+      const renderList = () => {
+        const { keyword, gigs } = listData;
+        if (!gigs.length) {
+          return `
+            <div class="header">
+              <h2><span class="keyword">${escapeHtml(keyword)}</span> 검색 결과</h2>
+            </div>
+            <div class="empty">검색 결과가 없어요.</div>
+          `;
+        }
+        const cards = gigs
+          .map((gig) => {
+            const busy = String(busyGigId === gig.gigId);
+            return `
+              <div class="card" data-gig-id="${gig.gigId}" data-busy="${busy}">
+                <div class="thumb">
+                  ${
+                    gig.thumbnail
+                      ? `<img src="${escapeHtml(gig.thumbnail)}" alt="${escapeHtml(gig.title)}" loading="lazy" />`
+                      : ""
+                  }
+                  ${gig.isPrime ? `<span class="badge-prime">PRIME</span>` : ""}
+                </div>
+                <div class="card-body">
+                  ${
+                    gig.categoryName
+                      ? `<span class="chip">${escapeHtml(gig.categoryName)}</span>`
+                      : ""
+                  }
+                  <div class="card-title">${escapeHtml(gig.title)}</div>
+                  <div class="seller-line">${escapeHtml(gig.seller?.nickname ?? "")}</div>
+                  ${
+                    gig.reviewCount > 0
+                      ? `<div class="rating"><span class="star">★</span>${gig.reviewAverage.toFixed(1)} <span class="review-count">(${gig.reviewCount})</span></div>`
+                      : `<div class="rating review-count">리뷰 없음</div>`
+                  }
+                  <div class="price"><small>From</small>${formatPrice(gig.price)}</div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        return `
+          <div class="header">
+            <h2><span class="keyword">${escapeHtml(keyword)}</span> 서비스 ${gigs.length}건</h2>
+          </div>
+          ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
+          <div class="grid">${cards}</div>
+        `;
+      };
+
+      const renderDetail = () => {
+        const gig = detailData;
+        if (!gig) {
+          return `
+            <button class="back-button" id="back">← 검색 결과로</button>
+            <div class="empty">서비스 정보를 불러오지 못했어요.</div>
+          `;
+        }
+        const pkgKeys = ["STANDARD", "DELUXE", "PREMIUM"];
+        const pkgLabels = { STANDARD: "STANDARD", DELUXE: "DELUXE", PREMIUM: "PREMIUM" };
+        const pkgCards = pkgKeys
+          .map((key) => {
+            const pkg = gig.packages?.[key];
+            if (!pkg) return "";
+            return `
+              <div class="package">
+                <h4>${pkgLabels[key]}</h4>
+                <div class="pkg-price">${formatPrice(pkg.price)}</div>
+                <div class="pkg-days">${pkg.days}일 작업</div>
+                <div class="pkg-desc">${escapeHtml(pkg.description)}</div>
+              </div>
+            `;
+          })
+          .join("");
+
+        const gallery = (gig.images ?? [])
+          .filter((src) => src && src !== gig.mainImage)
+          .slice(0, 8)
+          .map(
+            (src) =>
+              `<img src="${escapeHtml(src)}" alt="${escapeHtml(gig.title)}" loading="lazy" />`
+          )
+          .join("");
+
+        return `
+          <button class="back-button" id="back">← 검색 결과로</button>
+          ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
+          <div class="detail">
+            ${
+              gig.mainImage
+                ? `<div class="detail-hero"><img src="${escapeHtml(gig.mainImage)}" alt="${escapeHtml(gig.title)}" /></div>`
+                : ""
+            }
+            ${gallery ? `<div class="detail-gallery">${gallery}</div>` : ""}
+            <div class="detail-body">
+              ${
+                gig.categoryBreadcrumb?.length
+                  ? `<div class="breadcrumb">${gig.categoryBreadcrumb.map(escapeHtml).join(" · ")}</div>`
+                  : ""
+              }
+              <h3 class="detail-title">${escapeHtml(gig.title)}</h3>
+              <div class="meta-row">
+                ${
+                  gig.reviewCount > 0
+                    ? `<div class="rating"><span class="star">★</span>${gig.reviewAverage.toFixed(1)} <span class="review-count">(${gig.reviewCount})</span></div>`
+                    : `<div class="rating review-count">리뷰 없음</div>`
+                }
+              </div>
+              <div class="detail-price">${formatPrice(gig.price)}~</div>
+              <div class="seller-card">
+                <div class="avatar">
+                  ${
+                    gig.seller?.thumbnail
+                      ? `<img src="${escapeHtml(gig.seller.thumbnail)}" alt="${escapeHtml(gig.seller.nickname)}" />`
+                      : ""
+                  }
+                </div>
+                <div class="info">
+                  <div class="nickname">${escapeHtml(gig.seller?.nickname ?? "")}</div>
+                  ${gig.seller?.grade ? `<div class="grade">${escapeHtml(gig.seller.grade)}</div>` : ""}
+                  ${
+                    gig.seller?.ratingsCount > 0
+                      ? `<div class="rating"><span class="star">★</span>${gig.seller.ratingsAverage.toFixed(1)} <span class="review-count">(${gig.seller.ratingsCount})</span></div>`
+                      : ""
+                  }
+                </div>
+              </div>
+              ${pkgCards ? `<div class="packages">${pkgCards}</div>` : ""}
+              ${
+                gig.descriptionHtml
+                  ? `<details class="description"><summary>서비스 설명 보기</summary><div class="desc-body">${gig.descriptionHtml}</div></details>`
+                  : ""
+              }
+              <a class="external-link" href="${escapeHtml(gig.webUrl)}" target="_blank" rel="noopener noreferrer">크몽에서 보기 →</a>
+            </div>
+          </div>
+        `;
+      };
+
+      const render = () => {
+        rootEl.innerHTML = view === "detail" ? renderDetail() : renderList();
+        if (view === "detail") {
+          const back = document.querySelector("#back");
+          if (back) {
+            back.addEventListener("click", () => {
+              view = "list";
+              errorMessage = "";
+              render();
+            });
+          }
+        } else {
+          rootEl.querySelectorAll(".card").forEach((cardEl) => {
+            cardEl.addEventListener("click", () => {
+              const id = Number(cardEl.dataset.gigId);
+              if (id && !busyGigId) openDetail(id);
+            });
+          });
+        }
+      };
+
+      const updateFromResponse = (response) => {
+        const sc = response?.structuredContent;
+        if (!sc) return;
+        if (sc.view === "list" && Array.isArray(sc.gigs)) {
+          listData = { keyword: sc.keyword ?? "", gigs: sc.gigs };
+          view = "list";
+        } else if (sc.view === "detail" && sc.gig) {
+          detailData = sc.gig;
+          view = "detail";
+        } else if (sc.view === "detail" && sc.gig === null) {
+          detailData = null;
+          view = "detail";
+        }
+        if (response?.isError && Array.isArray(response.content)) {
+          const text = response.content.find((c) => c.type === "text")?.text;
+          errorMessage = text ?? "";
+        } else {
+          errorMessage = "";
+        }
+        render();
+      };
+
+      let rpcId = 0;
+      const pendingRequests = new Map();
+
+      const rpcNotify = (method, params) => {
+        window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+      };
+
+      const rpcRequest = (method, params) =>
+        new Promise((resolve, reject) => {
+          const id = ++rpcId;
+          pendingRequests.set(id, { resolve, reject });
+          window.parent.postMessage(
+            { jsonrpc: "2.0", id, method, params },
+            "*"
+          );
+        });
+
+      window.addEventListener(
+        "message",
+        (event) => {
+          if (event.source !== window.parent) return;
+          const message = event.data;
+          if (!message || message.jsonrpc !== "2.0") return;
+          if (typeof message.id === "number") {
+            const pending = pendingRequests.get(message.id);
+            if (!pending) return;
+            pendingRequests.delete(message.id);
+            if (message.error) {
+              pending.reject(message.error);
+              return;
+            }
+            pending.resolve(message.result);
+            return;
+          }
+          if (typeof message.method !== "string") return;
+          if (message.method === "ui/notifications/tool-result") {
+            updateFromResponse(message.params);
+          }
+        },
+        { passive: true }
+      );
+
+      const initializeBridge = async () => {
+        try {
+          await rpcRequest("ui/initialize", {
+            appInfo: { name: "kmong-gig-search", version: "0.1.0" },
+            appCapabilities: {},
+            protocolVersion: "2026-01-26",
+          });
+          rpcNotify("ui/notifications/initialized", {});
+        } catch (error) {
+          console.error("Failed to initialize MCP Apps bridge:", error);
+          throw error;
+        }
+      };
+
+      const bridgeReady = initializeBridge();
+
+      const callKmongTool = async (name, payload) => {
+        await bridgeReady;
+        const response = await rpcRequest("tools/call", {
+          name,
+          arguments: payload,
+        });
+        updateFromResponse(response);
+      };
+
+      const openDetail = async (gigId) => {
+        busyGigId = gigId;
+        render();
+        try {
+          await callKmongTool("get_gig_detail", { gigId });
+        } catch (error) {
+          console.error("get_gig_detail failed:", error);
+          errorMessage = "서비스 상세를 불러오지 못했어요.";
+        } finally {
+          busyGigId = null;
+          render();
+        }
+      };
+
+      render();
+    </script>
+  </body>
+</html>
