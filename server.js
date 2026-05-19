@@ -34,6 +34,91 @@ async function fetchJson(url) {
   return res.json();
 }
 
+const imageDataUriCache = new Map();
+const IMAGE_CACHE_MAX = 500;
+
+function guessImageMime(url, contentType) {
+  if (contentType && contentType.startsWith("image/")) return contentType;
+  const lower = url.toLowerCase().split("?")[0];
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  return "image/jpeg";
+}
+
+async function toImageDataUri(url) {
+  if (!url || typeof url !== "string") return "";
+  if (url.startsWith("data:")) return url;
+  if (!/^https?:\/\//i.test(url)) return "";
+  if (imageDataUriCache.has(url)) return imageDataUriCache.get(url);
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "user-agent": KMONG_HEADERS["user-agent"],
+        accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+        referer: "https://kmong.com/",
+      },
+    });
+    if (!res.ok) {
+      console.error(`image fetch ${res.status} for ${url}`);
+      return "";
+    }
+    const mime = guessImageMime(url, res.headers.get("content-type") ?? "");
+    const buf = Buffer.from(await res.arrayBuffer());
+    const dataUri = `data:${mime};base64,${buf.toString("base64")}`;
+    if (imageDataUriCache.size >= IMAGE_CACHE_MAX) {
+      const firstKey = imageDataUriCache.keys().next().value;
+      imageDataUriCache.delete(firstKey);
+    }
+    imageDataUriCache.set(url, dataUri);
+    return dataUri;
+  } catch (error) {
+    console.error(`image fetch failed for ${url}:`, error.message);
+    return "";
+  }
+}
+
+async function inlineImagesInGigListItems(items) {
+  await Promise.all(
+    items.map(async (item) => {
+      const [thumb, sellerThumb] = await Promise.all([
+        toImageDataUri(item.thumbnail),
+        toImageDataUri(item.seller?.thumbnail),
+      ]);
+      item.thumbnail = thumb;
+      if (item.seller) item.seller.thumbnail = sellerThumb;
+    })
+  );
+  return items;
+}
+
+async function inlineImagesInGigDetail(detail) {
+  const [mainImage, images, sellerThumb] = await Promise.all([
+    toImageDataUri(detail.mainImage),
+    Promise.all((detail.images ?? []).map(toImageDataUri)),
+    toImageDataUri(detail.seller?.thumbnail),
+  ]);
+  detail.mainImage = mainImage;
+  detail.images = images.filter(Boolean);
+  if (detail.seller) detail.seller.thumbnail = sellerThumb;
+  return detail;
+}
+
+async function inlineImagesInSellerListItems(items) {
+  await Promise.all(
+    items.map(async (item) => {
+      item.thumbnail = await toImageDataUri(item.thumbnail);
+    })
+  );
+  return items;
+}
+
+async function inlineImagesInSellerDetail(detail) {
+  detail.thumbnail = await toImageDataUri(detail.thumbnail);
+  return detail;
+}
+
 function firstImage(images) {
   if (!Array.isArray(images) || images.length === 0) return "";
   const first = images[0];
@@ -607,6 +692,7 @@ function createKmongServer() {
       }
       try {
         const gigs = await searchGigs(keyword);
+        await inlineImagesInGigListItems(gigs);
         return textReply(
           { view: "list", keyword, gigs },
           `'${keyword}' 키워드로 ${gigs.length}개의 서비스를 찾았어요.`
@@ -641,6 +727,7 @@ function createKmongServer() {
       }
       try {
         const gig = await getGigDetail(gigId);
+        await inlineImagesInGigDetail(gig);
         return textReply(
           { view: "detail", gig },
           `'${gig.title}' 서비스 상세를 불러왔어요.`
@@ -674,6 +761,7 @@ function createKmongServer() {
       }
       try {
         const sellers = await searchSellers(keyword);
+        await inlineImagesInSellerListItems(sellers);
         return textReply(
           { view: "list", keyword, sellers },
           `'${keyword}' 키워드로 ${sellers.length}명의 전문가를 찾았어요.`
@@ -708,6 +796,7 @@ function createKmongServer() {
       }
       try {
         const seller = await getSellerDetail(nickname);
+        await inlineImagesInSellerDetail(seller);
         return textReply(
           { view: "detail", seller },
           `'${seller.nickname}' 전문가 프로필을 불러왔어요.`
