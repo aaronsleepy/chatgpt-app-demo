@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>크몽 전문가 검색</title>
+    <style>
+      :root {
+        --kmong-primary: #3045ff;
+        --kmong-accent: #ff5c00;
+        --kmong-star: #ffc107;
+        --kmong-muted: #6c768a;
+        --kmong-text: #11141b;
+        --kmong-bg: #f6f8fb;
+        --kmong-card: #ffffff;
+        --kmong-border: #e5e8ef;
+        color: var(--kmong-text);
+        font-family:
+          system-ui,
+          "Pretendard",
+          "Apple SD Gothic Neo",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        padding: 16px;
+        background: var(--kmong-bg);
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .header h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      .header .keyword {
+        color: var(--kmong-primary);
+      }
+
+      .back-button {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--kmong-primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 8px 0;
+        cursor: pointer;
+      }
+
+      .back-button:hover {
+        text-decoration: underline;
+      }
+
+      .empty {
+        padding: 32px 16px;
+        text-align: center;
+        color: var(--kmong-muted);
+        background: var(--kmong-card);
+        border-radius: 12px;
+      }
+
+      .error {
+        background: #fff3f3;
+        color: #b91c1c;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+      }
+
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .card {
+        background: var(--kmong-card);
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+      }
+
+      .card[data-busy="true"] {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .avatar {
+        position: relative;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #e2e6ee;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .grade-badge {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        background: var(--kmong-primary);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+        border: 2px solid #fff;
+      }
+
+      .body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .nickname {
+        font-weight: 700;
+        font-size: 1rem;
+      }
+
+      .desc {
+        font-size: 0.83rem;
+        color: var(--kmong-muted);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
+      }
+
+      .chip {
+        background: #f1f4fb;
+        color: var(--kmong-primary);
+        font-size: 0.72rem;
+        padding: 3px 8px;
+        border-radius: 10px;
+      }
+
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: var(--kmong-muted);
+      }
+
+      .stats .rating {
+        color: var(--kmong-text);
+      }
+
+      .star {
+        color: var(--kmong-star);
+        font-size: 0.85rem;
+        line-height: 1;
+        margin-right: 2px;
+      }
+
+      .detail {
+        background: var(--kmong-card);
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .detail-header {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .detail-header .avatar {
+        width: 96px;
+        height: 96px;
+      }
+
+      .detail-header .info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .detail-header .nickname {
+        font-size: 1.2rem;
+        font-weight: 800;
+      }
+
+      .detail-header .area {
+        font-size: 0.85rem;
+        color: var(--kmong-muted);
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      @media (max-width: 480px) {
+        .summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      .summary-cell {
+        background: #f7f8fb;
+        padding: 10px 12px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .summary-cell .label {
+        font-size: 0.7rem;
+        color: var(--kmong-muted);
+      }
+
+      .summary-cell .value {
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      section.block h4 {
+        margin: 0 0 8px;
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      section.block .description-text {
+        font-size: 0.88rem;
+        line-height: 1.6;
+        color: var(--kmong-text);
+        white-space: pre-wrap;
+      }
+
+      ul.bullet {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      ul.bullet li {
+        font-size: 0.85rem;
+        color: var(--kmong-text);
+        padding-left: 14px;
+        position: relative;
+      }
+
+      ul.bullet li::before {
+        content: "•";
+        color: var(--kmong-primary);
+        position: absolute;
+        left: 0;
+      }
+
+      .external-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--kmong-primary);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 12px 16px;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="root"></main>
+
+    <script type="module">
+      const rootEl = document.querySelector("#root");
+
+      let view = "list";
+      let listData = { keyword: "", sellers: [] };
+      let detailData = null;
+      let errorMessage = "";
+      let busyNickname = null;
+
+      const escapeHtml = (str) =>
+        String(str ?? "").replace(/[&<>"']/g, (c) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+        );
+
+      const renderList = () => {
+        const { keyword, sellers } = listData;
+        if (!sellers.length) {
+          return `
+            <div class="header">
+              <h2><span class="keyword">${escapeHtml(keyword)}</span> 전문가 검색</h2>
+            </div>
+            <div class="empty">검색 결과가 없어요.</div>
+          `;
+        }
+        const cards = sellers
+          .map((seller) => {
+            const busy = String(busyNickname === seller.nickname);
+            const chips = (seller.specialties ?? [])
+              .slice(0, 3)
+              .map((s) => `<span class="chip">${escapeHtml(s)}</span>`)
+              .join("");
+            const stats = [];
+            if (seller.reviewCount > 0) {
+              stats.push(
+                `<span class="rating"><span class="star">★</span>${seller.reviewAverage.toFixed(
+                  1
+                )} (${seller.reviewCount})</span>`
+              );
+            }
+            if (seller.completedOrderCount > 0) {
+              stats.push(
+                `<span>완료 ${seller.completedOrderCount.toLocaleString("ko-KR")}건</span>`
+              );
+            }
+            if (seller.responseTime) {
+              stats.push(`<span>응답 ${escapeHtml(seller.responseTime)}</span>`);
+            }
+            return `
+              <div class="card" data-nickname="${escapeHtml(seller.nickname)}" data-busy="${busy}">
+                <div class="avatar">
+                  ${
+                    seller.thumbnail
+                      ? `<img src="${escapeHtml(seller.thumbnail)}" alt="${escapeHtml(seller.nickname)}" loading="lazy" />`
+                      : ""
+                  }
+                  ${seller.grade ? `<span class="grade-badge">${escapeHtml(seller.grade)}</span>` : ""}
+                </div>
+                <div class="body">
+                  <div class="nickname">${escapeHtml(seller.nickname)}</div>
+                  ${seller.description ? `<div class="desc">${escapeHtml(seller.description)}</div>` : ""}
+                  ${chips ? `<div class="chips">${chips}</div>` : ""}
+                  ${stats.length ? `<div class="stats">${stats.join("")}</div>` : ""}
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        return `
+          <div class="header">
+            <h2><span class="keyword">${escapeHtml(keyword)}</span> 전문가 ${sellers.length}명</h2>
+          </div>
+          ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
+          <div class="list">${cards}</div>
+        `;
+      };
+
+      const renderDetail = () => {
+        const seller = detailData;
+        if (!seller) {
+          return `
+            <button class="back-button" id="back">← 검색 결과로</button>
+            <div class="empty">전문가 정보를 불러오지 못했어요.</div>
+          `;
+        }
+
+        const summary = [];
+        if (seller.ratingsCount > 0) {
+          summary.push(
+            `<div class="summary-cell"><span class="label">평점</span><span class="value"><span class="star">★</span>${seller.ratingsAverage.toFixed(1)} (${seller.ratingsCount})</span></div>`
+          );
+        }
+        if (seller.satisfaction > 0) {
+          summary.push(
+            `<div class="summary-cell"><span class="label">만족도</span><span class="value">${seller.satisfaction}%</span></div>`
+          );
+        }
+        if (seller.responseTime) {
+          summary.push(
+            `<div class="summary-cell"><span class="label">응답시간</span><span class="value">${escapeHtml(seller.responseTime)}</span></div>`
+          );
+        }
+        if (seller.completedOrderCount > 0) {
+          summary.push(
+            `<div class="summary-cell"><span class="label">완료주문</span><span class="value">${seller.completedOrderCount.toLocaleString("ko-KR")}건</span></div>`
+          );
+        }
+        if (seller.careerYears > 0) {
+          summary.push(
+            `<div class="summary-cell"><span class="label">경력</span><span class="value">${seller.careerYears}년</span></div>`
+          );
+        }
+
+        const renderChips = (items) =>
+          items.length
+            ? `<div class="chips">${items
+                .map((s) => `<span class="chip">${escapeHtml(s)}</span>`)
+                .join("")}</div>`
+            : "";
+
+        const renderList = (items) =>
+          items.length
+            ? `<ul class="bullet">${items
+                .map((s) => `<li>${escapeHtml(s)}</li>`)
+                .join("")}</ul>`
+            : "";
+
+        return `
+          <button class="back-button" id="back">← 검색 결과로</button>
+          ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
+          <div class="detail">
+            <div class="detail-header">
+              <div class="avatar">
+                ${
+                  seller.thumbnail
+                    ? `<img src="${escapeHtml(seller.thumbnail)}" alt="${escapeHtml(seller.nickname)}" />`
+                    : ""
+                }
+                ${seller.grade ? `<span class="grade-badge">${escapeHtml(seller.grade)}</span>` : ""}
+              </div>
+              <div class="info">
+                <div class="nickname">${escapeHtml(seller.nickname)}</div>
+                ${seller.area ? `<div class="area">${escapeHtml(seller.area)}</div>` : ""}
+              </div>
+            </div>
+            ${summary.length ? `<div class="summary-grid">${summary.join("")}</div>` : ""}
+            ${
+              seller.description
+                ? `<section class="block"><h4>자기소개</h4><div class="description-text">${escapeHtml(seller.description)}</div></section>`
+                : ""
+            }
+            ${
+              seller.specialties?.length
+                ? `<section class="block"><h4>전문분야</h4>${renderChips(seller.specialties)}</section>`
+                : ""
+            }
+            ${
+              seller.skills?.length
+                ? `<section class="block"><h4>보유 스킬</h4>${renderChips(seller.skills)}</section>`
+                : ""
+            }
+            ${
+              seller.careers?.length
+                ? `<section class="block"><h4>경력</h4>${renderList(seller.careers)}</section>`
+                : ""
+            }
+            ${
+              seller.educations?.length
+                ? `<section class="block"><h4>학력</h4>${renderList(seller.educations)}</section>`
+                : ""
+            }
+            <a class="external-link" href="${escapeHtml(seller.webUrl)}" target="_blank" rel="noopener noreferrer">크몽 프로필 보기 →</a>
+          </div>
+        `;
+      };
+
+      const render = () => {
+        rootEl.innerHTML = view === "detail" ? renderDetail() : renderList();
+        if (view === "detail") {
+          const back = document.querySelector("#back");
+          if (back) {
+            back.addEventListener("click", () => {
+              view = "list";
+              errorMessage = "";
+              render();
+            });
+          }
+        } else {
+          rootEl.querySelectorAll(".card").forEach((cardEl) => {
+            cardEl.addEventListener("click", () => {
+              const nickname = cardEl.dataset.nickname;
+              if (nickname && !busyNickname) openDetail(nickname);
+            });
+          });
+        }
+      };
+
+      const updateFromResponse = (response) => {
+        const sc = response?.structuredContent;
+        if (!sc) return;
+        if (sc.view === "list" && Array.isArray(sc.sellers)) {
+          listData = { keyword: sc.keyword ?? "", sellers: sc.sellers };
+          view = "list";
+        } else if (sc.view === "detail" && sc.seller) {
+          detailData = sc.seller;
+          view = "detail";
+        } else if (sc.view === "detail" && sc.seller === null) {
+          detailData = null;
+          view = "detail";
+        }
+        if (response?.isError && Array.isArray(response.content)) {
+          const text = response.content.find((c) => c.type === "text")?.text;
+          errorMessage = text ?? "";
+        } else {
+          errorMessage = "";
+        }
+        render();
+      };
+
+      let rpcId = 0;
+      const pendingRequests = new Map();
+
+      const rpcNotify = (method, params) => {
+        window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+      };
+
+      const rpcRequest = (method, params) =>
+        new Promise((resolve, reject) => {
+          const id = ++rpcId;
+          pendingRequests.set(id, { resolve, reject });
+          window.parent.postMessage(
+            { jsonrpc: "2.0", id, method, params },
+            "*"
+          );
+        });
+
+      window.addEventListener(
+        "message",
+        (event) => {
+          if (event.source !== window.parent) return;
+          const message = event.data;
+          if (!message || message.jsonrpc !== "2.0") return;
+          if (typeof message.id === "number") {
+            const pending = pendingRequests.get(message.id);
+            if (!pending) return;
+            pendingRequests.delete(message.id);
+            if (message.error) {
+              pending.reject(message.error);
+              return;
+            }
+            pending.resolve(message.result);
+            return;
+          }
+          if (typeof message.method !== "string") return;
+          if (message.method === "ui/notifications/tool-result") {
+            updateFromResponse(message.params);
+          }
+        },
+        { passive: true }
+      );
+
+      const initializeBridge = async () => {
+        try {
+          await rpcRequest("ui/initialize", {
+            appInfo: { name: "kmong-seller-search", version: "0.1.0" },
+            appCapabilities: {},
+            protocolVersion: "2026-01-26",
+          });
+          rpcNotify("ui/notifications/initialized", {});
+        } catch (error) {
+          console.error("Failed to initialize MCP Apps bridge:", error);
+          throw error;
+        }
+      };
+
+      const bridgeReady = initializeBridge();
+
+      const callKmongTool = async (name, payload) => {
+        await bridgeReady;
+        const response = await rpcRequest("tools/call", {
+          name,
+          arguments: payload,
+        });
+        updateFromResponse(response);
+      };
+
+      const openDetail = async (nickname) => {
+        busyNickname = nickname;
+        render();
+        try {
+          await callKmongTool("get_seller_detail", { nickname });
+        } catch (error) {
+          console.error("get_seller_detail failed:", error);
+          errorMessage = "전문가 상세를 불러오지 못했어요.";
+        } finally {
+          busyNickname = null;
+          render();
+        }
+      };
+
+      render();
+    </script>
+  </body>
+</html>
