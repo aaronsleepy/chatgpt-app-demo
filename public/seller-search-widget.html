@@ -371,11 +371,12 @@
         const { keyword, sellers } = listData;
         const shown = sellers.slice(0, MAX_LIST);
         if (!shown.length) {
+          const isLoading = !keyword;
           return `
             <div class="header">
               <h2><span class="keyword">${escapeHtml(keyword)}</span> 전문가 검색</h2>
             </div>
-            <div class="empty">검색 결과가 없어요.</div>
+            <div class="empty">${isLoading ? "검색 중입니다…" : "검색 결과가 없어요."}</div>
           `;
         }
         const cards = shown
