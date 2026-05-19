@@ -387,11 +387,14 @@ function normalizeSellerListItem(raw) {
 async function searchSellers(keyword) {
   const params = new URLSearchParams({
     keyword,
-    page: "1",
-    perPage: "10",
+    isFastReaction: "false",
+    isCompany: "false",
+    isResident: "false",
+    hasPortfolios: "false",
     sortType: "SCORE",
-    service: "web",
-    q: keyword,
+    page: "1",
+    perPage: "24",
+    includeAggregations: "true",
   });
   const url = `${KMONG_API}/gig-app/seller-profile/v2/seller-profiles/search?${params.toString()}`;
   const payload = await fetchJson(url);
@@ -417,7 +420,7 @@ function normalizeSellerDetail(payload, nickname) {
 
   const review = sellerInfo.review ?? {};
   const order = sellerInfo.order ?? {};
-  const areaSrc = profileInfo.activityArea ?? sellerInfo.activityArea;
+  const areaSrc = sellerInfo.activityArea ?? profileInfo.activityArea;
   const area =
     typeof areaSrc === "string" ? areaSrc : String(areaSrc?.areaName ?? "");
 
@@ -446,10 +449,13 @@ function normalizeSellerDetail(payload, nickname) {
   const careers = (Array.isArray(profileInfo.careers) ? profileInfo.careers : [])
     .map((c) => {
       if (typeof c === "string") return c;
-      const company = c?.company ?? c?.companyName ?? "";
-      const position = c?.position ?? c?.department ?? "";
-      const year = c?.year;
-      const month = c?.month;
+      const company = c?.company ?? c?.companyName ?? null;
+      const position = c?.position ?? c?.department ?? null;
+      const year = c?.year ?? null;
+      const month = c?.month ?? null;
+      if (company === null && position === null && year === null && month === null) {
+        return "";
+      }
       const freelancer = c?.isFreelancer ? "프리랜서" : "";
       const period =
         Number(year) || Number(month)
@@ -460,12 +466,21 @@ function normalizeSellerDetail(payload, nickname) {
     })
     .filter(Boolean);
 
+  const attendanceStatusMap = {
+    GRADUATION: "졸업",
+    ATTENDING: "재학",
+    LEAVE_OF_ABSENCE: "휴학",
+    DROPOUT: "중퇴",
+    COMPLETION: "수료",
+    EXPECTED_GRADUATION: "졸업예정",
+  };
   const educations = (Array.isArray(profileInfo.educations) ? profileInfo.educations : [])
     .map((e) => {
       if (typeof e === "string") return e;
       const uni = e?.university ?? "";
       const major = e?.major ?? "";
-      return [uni, major].filter(Boolean).join(" · ");
+      const status = attendanceStatusMap[e?.attendanceStatusType] ?? "";
+      return [uni, major, status].filter(Boolean).join(" · ");
     })
     .filter(Boolean);
 
