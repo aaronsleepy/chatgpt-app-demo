@@ -35,13 +35,14 @@
       }
 
       body {
-        padding: 16px;
+        padding: 0;
         background: var(--kmong-bg);
       }
 
       main {
-        max-width: 720px;
+        max-width: 960px;
         margin: 0 auto;
+        padding: 16px;
       }
 
       .header {
@@ -61,19 +62,31 @@
         color: var(--kmong-primary);
       }
 
-      .back-button {
-        appearance: none;
-        border: none;
-        background: transparent;
-        color: var(--kmong-primary);
+      .back-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #ffffff;
+        border-bottom: 1px solid var(--kmong-border);
+        padding: 10px 16px;
+        margin: -16px -16px 14px;
         font-weight: 600;
-        font-size: 0.9rem;
-        padding: 8px 0;
+        font-size: 0.92rem;
+        color: var(--kmong-text);
         cursor: pointer;
+        user-select: none;
       }
 
-      .back-button:hover {
-        text-decoration: underline;
+      .back-header:hover {
+        color: var(--kmong-primary);
+      }
+
+      .back-header .arrow {
+        font-size: 1.1rem;
+        line-height: 1;
       }
 
       .empty {
@@ -86,21 +99,21 @@
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
       }
 
-      @media (max-width: 480px) {
+      @media (max-width: 720px) {
         .grid {
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
 
       .card {
         background: var(--kmong-card);
-        border-radius: 12px;
+        border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
         cursor: pointer;
         display: flex;
         flex-direction: column;
@@ -120,7 +133,7 @@
       .thumb {
         position: relative;
         width: 100%;
-        padding-top: 100%;
+        padding-top: 60%;
         background: #eef0f5;
         overflow: hidden;
       }
@@ -133,37 +146,79 @@
         object-fit: cover;
       }
 
+      .thumb .placeholder-chip {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--kmong-muted);
+        background: linear-gradient(135deg, #eef0f5 0%, #dde2ec 100%);
+        padding: 0 10px;
+        text-align: center;
+      }
+
       .badge-prime {
         position: absolute;
-        top: 8px;
-        left: 8px;
+        top: 6px;
+        left: 6px;
         background: var(--kmong-accent);
         color: #fff;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 700;
-        padding: 3px 7px;
-        border-radius: 4px;
+        padding: 2px 6px;
+        border-radius: 3px;
         letter-spacing: 0.02em;
       }
 
       .card-body {
-        padding: 10px 12px 12px;
+        padding: 8px 10px 10px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 3px;
       }
 
-      .chip {
-        align-self: flex-start;
-        font-size: 0.7rem;
+      .seller-row {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.72rem;
         color: var(--kmong-muted);
-        background: #f2f4f8;
-        border-radius: 4px;
-        padding: 2px 6px;
+      }
+
+      .seller-row .avatar-xs {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #e2e6ee;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .seller-row .avatar-xs img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .seller-row .nick {
+        font-weight: 600;
+        color: var(--kmong-text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+      }
+
+      .seller-row .grade {
+        color: var(--kmong-muted);
+        font-size: 0.68rem;
       }
 
       .card-title {
-        font-size: 0.9rem;
+        font-size: 0.82rem;
         line-height: 1.35;
         font-weight: 500;
         color: var(--kmong-text);
@@ -173,22 +228,17 @@
         overflow: hidden;
       }
 
-      .seller-line {
-        font-size: 0.78rem;
-        color: var(--kmong-muted);
-      }
-
       .rating {
-        font-size: 0.78rem;
+        font-size: 0.73rem;
         color: var(--kmong-text);
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 3px;
       }
 
       .star {
         color: var(--kmong-star);
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         line-height: 1;
       }
 
@@ -197,17 +247,17 @@
       }
 
       .price {
-        font-size: 1rem;
+        font-size: 0.92rem;
         font-weight: 700;
         color: var(--kmong-text);
         margin-top: 2px;
       }
 
       .price small {
-        font-size: 0.7rem;
+        font-size: 0.66rem;
         font-weight: 500;
         color: var(--kmong-muted);
-        margin-right: 4px;
+        margin-right: 3px;
       }
 
       .error {
@@ -260,7 +310,7 @@
         padding: 14px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 14px;
       }
 
       .breadcrumb {
@@ -269,32 +319,23 @@
       }
 
       .detail-title {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: 700;
         line-height: 1.4;
         margin: 0;
       }
 
-      .meta-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .meta-badge {
-        background: var(--kmong-accent);
-        color: #fff;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 3px 7px;
-        border-radius: 4px;
-      }
-
       .detail-price {
-        font-size: 1.3rem;
+        font-size: 1.35rem;
         font-weight: 800;
         color: var(--kmong-text);
+      }
+
+      .detail-price small {
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--kmong-muted);
+        margin-right: 4px;
       }
 
       .seller-card {
@@ -429,6 +470,7 @@
 
     <script type="module">
       const rootEl = document.querySelector("#root");
+      const MAX_LIST = 6;
 
       let view = "list";
       let listData = { keyword: "", gigs: [] };
@@ -448,7 +490,8 @@
 
       const renderList = () => {
         const { keyword, gigs } = listData;
-        if (!gigs.length) {
+        const shown = gigs.slice(0, MAX_LIST);
+        if (!shown.length) {
           return `
             <div class="header">
               <h2><span class="keyword">${escapeHtml(keyword)}</span> 검색 결과</h2>
@@ -456,31 +499,32 @@
             <div class="empty">검색 결과가 없어요.</div>
           `;
         }
-        const cards = gigs
+        const cards = shown
           .map((gig) => {
             const busy = String(busyGigId === gig.gigId);
+            const thumbInner = gig.thumbnail
+              ? `<img src="${escapeHtml(gig.thumbnail)}" alt="${escapeHtml(gig.title)}" loading="lazy" />`
+              : `<span class="placeholder-chip">${escapeHtml(gig.categoryName || "크몽")}</span>`;
+            const sellerAvatar = gig.seller?.thumbnail
+              ? `<span class="avatar-xs"><img src="${escapeHtml(gig.seller.thumbnail)}" alt="" loading="lazy" /></span>`
+              : "";
             return `
               <div class="card" data-gig-id="${gig.gigId}" data-busy="${busy}">
                 <div class="thumb">
-                  ${
-                    gig.thumbnail
-                      ? `<img src="${escapeHtml(gig.thumbnail)}" alt="${escapeHtml(gig.title)}" loading="lazy" />`
-                      : ""
-                  }
+                  ${thumbInner}
                   ${gig.isPrime ? `<span class="badge-prime">PRIME</span>` : ""}
                 </div>
                 <div class="card-body">
-                  ${
-                    gig.categoryName
-                      ? `<span class="chip">${escapeHtml(gig.categoryName)}</span>`
-                      : ""
-                  }
+                  <div class="seller-row">
+                    ${sellerAvatar}
+                    <span class="nick">${escapeHtml(gig.seller?.nickname ?? "")}</span>
+                    ${gig.seller?.grade ? `<span class="grade">· ${escapeHtml(gig.seller.grade)}</span>` : ""}
+                  </div>
                   <div class="card-title">${escapeHtml(gig.title)}</div>
-                  <div class="seller-line">${escapeHtml(gig.seller?.nickname ?? "")}</div>
                   ${
                     gig.reviewCount > 0
-                      ? `<div class="rating"><span class="star">★</span>${gig.reviewAverage.toFixed(1)} <span class="review-count">(${gig.reviewCount})</span></div>`
-                      : `<div class="rating review-count">리뷰 없음</div>`
+                      ? `<div class="rating"><span class="star">★</span>${gig.reviewAverage.toFixed(1)} <span class="review-count">(${gig.reviewCount.toLocaleString("ko-KR")})</span></div>`
+                      : `<div class="rating review-count">신규</div>`
                   }
                   <div class="price"><small>From</small>${formatPrice(gig.price)}</div>
                 </div>
@@ -489,9 +533,14 @@
           })
           .join("");
 
+        const totalLabel =
+          gigs.length > MAX_LIST
+            ? `상위 ${shown.length}건`
+            : `${shown.length}건`;
+
         return `
           <div class="header">
-            <h2><span class="keyword">${escapeHtml(keyword)}</span> 서비스 ${gigs.length}건</h2>
+            <h2><span class="keyword">${escapeHtml(keyword)}</span> 서비스 ${totalLabel}</h2>
           </div>
           ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
           <div class="grid">${cards}</div>
@@ -500,24 +549,24 @@
 
       const renderDetail = () => {
         const gig = detailData;
+        const backBar = `<div class="back-header" id="back"><span class="arrow">←</span><span>검색 결과로</span></div>`;
         if (!gig) {
           return `
-            <button class="back-button" id="back">← 검색 결과로</button>
+            ${backBar}
             <div class="empty">서비스 정보를 불러오지 못했어요.</div>
           `;
         }
         const pkgKeys = ["STANDARD", "DELUXE", "PREMIUM"];
-        const pkgLabels = { STANDARD: "STANDARD", DELUXE: "DELUXE", PREMIUM: "PREMIUM" };
         const pkgCards = pkgKeys
           .map((key) => {
             const pkg = gig.packages?.[key];
             if (!pkg) return "";
             return `
               <div class="package">
-                <h4>${pkgLabels[key]}</h4>
+                <h4>${key}</h4>
                 <div class="pkg-price">${formatPrice(pkg.price)}</div>
-                <div class="pkg-days">${pkg.days}일 작업</div>
-                <div class="pkg-desc">${escapeHtml(pkg.description)}</div>
+                ${pkg.days ? `<div class="pkg-days">${pkg.days}일 작업</div>` : ""}
+                ${pkg.description ? `<div class="pkg-desc">${escapeHtml(pkg.description)}</div>` : ""}
               </div>
             `;
           })
@@ -532,8 +581,11 @@
           )
           .join("");
 
+        const priceLabel =
+          gig.price > 0 ? `<small>최저가</small>${formatPrice(gig.price)}~` : "가격 문의";
+
         return `
-          <button class="back-button" id="back">← 검색 결과로</button>
+          ${backBar}
           ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
           <div class="detail">
             ${
@@ -548,34 +600,36 @@
                   ? `<div class="breadcrumb">${gig.categoryBreadcrumb.map(escapeHtml).join(" · ")}</div>`
                   : ""
               }
-              <h3 class="detail-title">${escapeHtml(gig.title)}</h3>
-              <div class="meta-row">
-                ${
-                  gig.reviewCount > 0
-                    ? `<div class="rating"><span class="star">★</span>${gig.reviewAverage.toFixed(1)} <span class="review-count">(${gig.reviewCount})</span></div>`
-                    : `<div class="rating review-count">리뷰 없음</div>`
-                }
-              </div>
-              <div class="detail-price">${formatPrice(gig.price)}~</div>
-              <div class="seller-card">
-                <div class="avatar">
-                  ${
-                    gig.seller?.thumbnail
-                      ? `<img src="${escapeHtml(gig.seller.thumbnail)}" alt="${escapeHtml(gig.seller.nickname)}" />`
-                      : ""
-                  }
-                </div>
-                <div class="info">
-                  <div class="nickname">${escapeHtml(gig.seller?.nickname ?? "")}</div>
-                  ${gig.seller?.grade ? `<div class="grade">${escapeHtml(gig.seller.grade)}</div>` : ""}
-                  ${
-                    gig.seller?.ratingsCount > 0
-                      ? `<div class="rating"><span class="star">★</span>${gig.seller.ratingsAverage.toFixed(1)} <span class="review-count">(${gig.seller.ratingsCount})</span></div>`
-                      : ""
-                  }
-                </div>
-              </div>
+              ${gig.title ? `<h3 class="detail-title">${escapeHtml(gig.title)}</h3>` : ""}
+              <div class="detail-price">${priceLabel}</div>
+              ${
+                gig.seller?.nickname
+                  ? `<div class="seller-card">
+                      <div class="avatar">
+                        ${
+                          gig.seller.thumbnail
+                            ? `<img src="${escapeHtml(gig.seller.thumbnail)}" alt="${escapeHtml(gig.seller.nickname)}" />`
+                            : ""
+                        }
+                      </div>
+                      <div class="info">
+                        <div class="nickname">${escapeHtml(gig.seller.nickname)}</div>
+                        ${gig.seller.grade ? `<div class="grade">${escapeHtml(gig.seller.grade)}</div>` : ""}
+                        ${
+                          gig.seller.ratingsCount > 0
+                            ? `<div class="rating"><span class="star">★</span>${gig.seller.ratingsAverage.toFixed(1)} <span class="review-count">(${gig.seller.ratingsCount.toLocaleString("ko-KR")})</span></div>`
+                            : ""
+                        }
+                      </div>
+                    </div>`
+                  : ""
+              }
               ${pkgCards ? `<div class="packages">${pkgCards}</div>` : ""}
+              ${
+                gig.reviewCount > 0
+                  ? `<div class="rating"><span class="star">★</span>${gig.reviewAverage.toFixed(1)} <span class="review-count">리뷰 ${gig.reviewCount.toLocaleString("ko-KR")}건</span></div>`
+                  : ""
+              }
               ${
                 gig.descriptionHtml
                   ? `<details class="description"><summary>서비스 설명 보기</summary><div class="desc-body">${gig.descriptionHtml}</div></details>`

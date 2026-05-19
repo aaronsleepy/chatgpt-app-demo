@@ -35,13 +35,14 @@
       }
 
       body {
-        padding: 16px;
+        padding: 0;
         background: var(--kmong-bg);
       }
 
       main {
-        max-width: 720px;
+        max-width: 960px;
         margin: 0 auto;
+        padding: 16px;
       }
 
       .header {
@@ -61,19 +62,31 @@
         color: var(--kmong-primary);
       }
 
-      .back-button {
-        appearance: none;
-        border: none;
-        background: transparent;
-        color: var(--kmong-primary);
+      .back-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #ffffff;
+        border-bottom: 1px solid var(--kmong-border);
+        padding: 10px 16px;
+        margin: -16px -16px 14px;
         font-weight: 600;
-        font-size: 0.9rem;
-        padding: 8px 0;
+        font-size: 0.92rem;
+        color: var(--kmong-text);
         cursor: pointer;
+        user-select: none;
       }
 
-      .back-button:hover {
-        text-decoration: underline;
+      .back-header:hover {
+        color: var(--kmong-primary);
+      }
+
+      .back-header .arrow {
+        font-size: 1.1rem;
+        line-height: 1;
       }
 
       .empty {
@@ -93,22 +106,30 @@
         margin-bottom: 12px;
       }
 
-      .list {
-        display: flex;
-        flex-direction: column;
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 10px;
+      }
+
+      @media (max-width: 720px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
       }
 
       .card {
         background: var(--kmong-card);
         border-radius: 12px;
         padding: 14px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
         display: flex;
-        gap: 14px;
-        align-items: flex-start;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
         cursor: pointer;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
+        text-align: center;
       }
 
       .card:hover {
@@ -123,8 +144,8 @@
 
       .avatar {
         position: relative;
-        width: 72px;
-        height: 72px;
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
         background: #e2e6ee;
         overflow: hidden;
@@ -138,61 +159,40 @@
       }
 
       .grade-badge {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
+        display: inline-block;
         background: var(--kmong-primary);
         color: #fff;
         font-size: 0.65rem;
         font-weight: 700;
         padding: 2px 6px;
         border-radius: 10px;
-        border: 2px solid #fff;
       }
 
-      .body {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .nickname {
+      .card .nickname {
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.95rem;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .desc {
-        font-size: 0.83rem;
+      .card .desc {
+        font-size: 0.78rem;
         color: var(--kmong-muted);
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-      }
-
-      .chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-top: 4px;
-      }
-
-      .chip {
-        background: #f1f4fb;
-        color: var(--kmong-primary);
-        font-size: 0.72rem;
-        padding: 3px 8px;
-        border-radius: 10px;
+        line-height: 1.4;
       }
 
       .stats {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px 12px;
-        margin-top: 6px;
-        font-size: 0.78rem;
+        gap: 4px 10px;
+        justify-content: center;
+        font-size: 0.74rem;
         color: var(--kmong-muted);
       }
 
@@ -202,9 +202,17 @@
 
       .star {
         color: var(--kmong-star);
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         line-height: 1;
         margin-right: 2px;
+      }
+
+      .response-chip {
+        background: #f1f4fb;
+        color: var(--kmong-primary);
+        font-size: 0.7rem;
+        padding: 3px 8px;
+        border-radius: 10px;
       }
 
       .detail {
@@ -290,6 +298,20 @@
         white-space: pre-wrap;
       }
 
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .chip {
+        background: #f1f4fb;
+        color: var(--kmong-primary);
+        font-size: 0.72rem;
+        padding: 3px 8px;
+        border-radius: 10px;
+      }
+
       ul.bullet {
         list-style: none;
         padding: 0;
@@ -332,6 +354,7 @@
 
     <script type="module">
       const rootEl = document.querySelector("#root");
+      const MAX_LIST = 6;
 
       let view = "list";
       let listData = { keyword: "", sellers: [] };
@@ -346,7 +369,8 @@
 
       const renderList = () => {
         const { keyword, sellers } = listData;
-        if (!sellers.length) {
+        const shown = sellers.slice(0, MAX_LIST);
+        if (!shown.length) {
           return `
             <div class="header">
               <h2><span class="keyword">${escapeHtml(keyword)}</span> 전문가 검색</h2>
@@ -354,28 +378,21 @@
             <div class="empty">검색 결과가 없어요.</div>
           `;
         }
-        const cards = sellers
+        const cards = shown
           .map((seller) => {
             const busy = String(busyNickname === seller.nickname);
-            const chips = (seller.specialties ?? [])
-              .slice(0, 3)
-              .map((s) => `<span class="chip">${escapeHtml(s)}</span>`)
-              .join("");
             const stats = [];
             if (seller.reviewCount > 0) {
               stats.push(
                 `<span class="rating"><span class="star">★</span>${seller.reviewAverage.toFixed(
                   1
-                )} (${seller.reviewCount})</span>`
+                )} (${seller.reviewCount.toLocaleString("ko-KR")})</span>`
               );
             }
             if (seller.completedOrderCount > 0) {
               stats.push(
                 `<span>완료 ${seller.completedOrderCount.toLocaleString("ko-KR")}건</span>`
               );
-            }
-            if (seller.responseTime) {
-              stats.push(`<span>응답 ${escapeHtml(seller.responseTime)}</span>`);
             }
             return `
               <div class="card" data-nickname="${escapeHtml(seller.nickname)}" data-busy="${busy}">
@@ -385,33 +402,37 @@
                       ? `<img src="${escapeHtml(seller.thumbnail)}" alt="${escapeHtml(seller.nickname)}" loading="lazy" />`
                       : ""
                   }
-                  ${seller.grade ? `<span class="grade-badge">${escapeHtml(seller.grade)}</span>` : ""}
                 </div>
-                <div class="body">
-                  <div class="nickname">${escapeHtml(seller.nickname)}</div>
-                  ${seller.description ? `<div class="desc">${escapeHtml(seller.description)}</div>` : ""}
-                  ${chips ? `<div class="chips">${chips}</div>` : ""}
-                  ${stats.length ? `<div class="stats">${stats.join("")}</div>` : ""}
-                </div>
+                <div class="nickname">${escapeHtml(seller.nickname)}</div>
+                ${seller.grade ? `<span class="grade-badge">${escapeHtml(seller.grade)}</span>` : ""}
+                ${seller.description ? `<div class="desc">${escapeHtml(seller.description)}</div>` : ""}
+                ${stats.length ? `<div class="stats">${stats.join("")}</div>` : ""}
+                ${seller.responseTime ? `<span class="response-chip">응답 ${escapeHtml(seller.responseTime)}</span>` : ""}
               </div>
             `;
           })
           .join("");
 
+        const totalLabel =
+          sellers.length > MAX_LIST
+            ? `상위 ${shown.length}명`
+            : `${shown.length}명`;
+
         return `
           <div class="header">
-            <h2><span class="keyword">${escapeHtml(keyword)}</span> 전문가 ${sellers.length}명</h2>
+            <h2><span class="keyword">${escapeHtml(keyword)}</span> 전문가 ${totalLabel}</h2>
           </div>
           ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
-          <div class="list">${cards}</div>
+          <div class="grid">${cards}</div>
         `;
       };
 
       const renderDetail = () => {
         const seller = detailData;
+        const backBar = `<div class="back-header" id="back"><span class="arrow">←</span><span>검색 결과로</span></div>`;
         if (!seller) {
           return `
-            <button class="back-button" id="back">← 검색 결과로</button>
+            ${backBar}
             <div class="empty">전문가 정보를 불러오지 못했어요.</div>
           `;
         }
@@ -419,7 +440,7 @@
         const summary = [];
         if (seller.ratingsCount > 0) {
           summary.push(
-            `<div class="summary-cell"><span class="label">평점</span><span class="value"><span class="star">★</span>${seller.ratingsAverage.toFixed(1)} (${seller.ratingsCount})</span></div>`
+            `<div class="summary-cell"><span class="label">평점</span><span class="value"><span class="star">★</span>${seller.ratingsAverage.toFixed(1)} (${seller.ratingsCount.toLocaleString("ko-KR")})</span></div>`
           );
         }
         if (seller.satisfaction > 0) {
@@ -458,7 +479,7 @@
             : "";
 
         return `
-          <button class="back-button" id="back">← 검색 결과로</button>
+          ${backBar}
           ${errorMessage ? `<div class="error">${escapeHtml(errorMessage)}</div>` : ""}
           <div class="detail">
             <div class="detail-header">
@@ -468,10 +489,10 @@
                     ? `<img src="${escapeHtml(seller.thumbnail)}" alt="${escapeHtml(seller.nickname)}" />`
                     : ""
                 }
-                ${seller.grade ? `<span class="grade-badge">${escapeHtml(seller.grade)}</span>` : ""}
               </div>
               <div class="info">
                 <div class="nickname">${escapeHtml(seller.nickname)}</div>
+                ${seller.grade ? `<span class="grade-badge">${escapeHtml(seller.grade)}</span>` : ""}
                 ${seller.area ? `<div class="area">${escapeHtml(seller.area)}</div>` : ""}
               </div>
             </div>
