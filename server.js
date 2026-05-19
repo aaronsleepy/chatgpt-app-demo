@@ -34,32 +34,58 @@ async function fetchJson(url) {
   return res.json();
 }
 
-function pick(value, fallback) {
-  return value === undefined || value === null ? fallback : value;
+function firstImage(images) {
+  if (!Array.isArray(images) || images.length === 0) return "";
+  const first = images[0];
+  if (typeof first === "string") return first;
+  return String(first?.url ?? first?.background_image_url ?? first?.image ?? "");
 }
 
 function normalizeGigListItem(raw) {
   const seller = raw.seller ?? raw.user ?? {};
+  const category = raw.category ?? {};
+  const review = raw.review ?? {};
   return {
     gigId: Number(raw.gigId ?? raw.gig_id ?? raw.id ?? 0),
     title: String(raw.title ?? raw.gigTitle ?? ""),
     price: Number(raw.price ?? raw.minPrice ?? 0),
     thumbnail: String(
-      raw.thumbnail ?? raw.thumbnailUrl ?? raw.mainImage ?? raw.image ?? ""
+      raw.thumbnail ??
+        raw.thumbnailUrl ??
+        raw.mainImage ??
+        raw.image ??
+        firstImage(raw.images)
     ),
     reviewAverage: Number(
-      raw.reviewAverage ?? raw.ratingsAverage ?? raw.rating ?? 0
+      review.reviewAverage ??
+        review.ratingsAverage ??
+        raw.reviewAverage ??
+        raw.ratingsAverage ??
+        raw.rating ??
+        0
     ),
-    reviewCount: Number(raw.reviewCount ?? raw.ratingsCount ?? 0),
+    reviewCount: Number(
+      review.reviewCount ??
+        review.ratingsCount ??
+        raw.reviewCount ??
+        raw.ratingsCount ??
+        0
+    ),
     isPrime: Boolean(raw.isPrime ?? raw.prime ?? false),
     categoryName: String(
-      raw.categoryName ?? raw.category?.name ?? raw.subCategoryName ?? ""
+      category.thirdCategoryName ||
+        category.subCategoryName ||
+        category.rootCategoryName ||
+        raw.categoryName ||
+        raw.subCategoryName ||
+        raw.currentCategoryName ||
+        ""
     ),
     seller: {
-      nickname: String(seller.nickname ?? seller.userNickname ?? ""),
-      grade: String(seller.grade ?? seller.sellerGrade ?? ""),
+      nickname: String(seller.nickname ?? seller.userNickname ?? seller.username ?? ""),
+      grade: String(seller.grade ?? seller.sellerGrade ?? seller.rating ?? ""),
       thumbnail: String(
-        seller.thumbnail ?? seller.profileImage ?? seller.thumbnailUrl ?? ""
+        seller.thumbnail ?? seller.profileImage ?? seller.thumbnailUrl ?? seller.image ?? ""
       ),
     },
   };
@@ -101,105 +127,117 @@ async function searchGigs(keyword) {
 
 function normalizeGigDetail(payload, gigId) {
   const root = payload?.data ?? payload ?? {};
-  const modules = Array.isArray(root.modules) ? root.modules : [];
-  const moduleByType = {};
-  for (const m of modules) {
-    if (m && typeof m === "object" && m.type) {
-      moduleByType[m.type] = m;
-    }
-  }
+  const common = root.COMMON ?? root.common ?? {};
+  const topArr = Array.isArray(root.TOP) ? root.TOP : Array.isArray(root.top) ? root.top : [];
+  const leftArr = Array.isArray(root.LEFT) ? root.LEFT : [];
+  const rightArr = Array.isArray(root.RIGHT) ? root.RIGHT : [];
 
-  const head =
-    moduleByType.HEAD?.data ??
-    moduleByType.GIG_HEAD?.data ??
-    moduleByType.TITLE?.data ??
-    root.head ??
-    {};
-  const images =
-    moduleByType.IMAGES?.data?.images ??
-    moduleByType.IMAGE?.data?.images ??
-    head.images ??
-    root.images ??
-    [];
-  const sellerSrc =
-    moduleByType.SELLER?.data ??
-    moduleByType.SELLER_INFO?.data ??
-    root.seller ??
-    head.seller ??
-    {};
-  const packagesSrc =
-    moduleByType.PACKAGE?.data?.packages ??
-    moduleByType.PACKAGES?.data?.packages ??
-    root.packages ??
-    [];
-  const descriptionHtml =
-    moduleByType.DESCRIPTION?.data?.description ??
-    moduleByType.GIG_DESCRIPTION?.data?.description ??
-    root.description ??
-    "";
-  const categoryBreadcrumb =
-    moduleByType.CATEGORY?.data?.breadcrumb ??
-    head.categoryBreadcrumb ??
-    root.categoryBreadcrumb ??
-    [];
+  const findByType = (arr, types) => {
+    if (!Array.isArray(arr)) return null;
+    const set = new Set(types);
+    return arr.find((m) => m && (set.has(m.design_type) || set.has(m.type))) ?? null;
+  };
 
-  const packagesObj = { STANDARD: null, DELUXE: null, PREMIUM: null };
-  const normalizedPackages = Array.isArray(packagesSrc) ? packagesSrc : [];
-  for (const pkg of normalizedPackages) {
-    const key = String(pkg.type ?? pkg.name ?? "").toUpperCase();
-    if (packagesObj[key] !== undefined) {
-      packagesObj[key] = {
-        price: Number(pkg.price ?? 0),
-        days: Number(pkg.days ?? pkg.deliveryDays ?? 0),
-        description: String(pkg.description ?? pkg.summary ?? ""),
-      };
-    }
-  }
+  const heroModule = findByType(topArr, ["HERO_SECTION_COMMON"]) ?? topArr[0] ?? {};
+  const packagePanel = findByType(rightArr, ["PACKAGE_PANEL"]);
+  const descriptionModule = findByType(leftArr, ["TEXT_HTML"]);
 
-  const mainImage = String(
-    head.mainImage ?? images?.[0]?.url ?? images?.[0] ?? ""
-  );
-  const normalizedImages = (Array.isArray(images) ? images : [])
-    .map((img) => (typeof img === "string" ? img : img?.url ?? ""))
+  const userSrc = common.user ?? heroModule.user ?? root.user ?? root.sellerInfo ?? {};
+  const categorySrc = common.category ?? {};
+
+  // images: prefer TOP module's main_galleries, then COMMON.main_image, then root.images
+  const galleryItems = Array.isArray(heroModule.main_galleries)
+    ? heroModule.main_galleries
+    : Array.isArray(heroModule.image_galleries)
+      ? heroModule.image_galleries
+      : Array.isArray(root.images)
+        ? root.images
+        : [];
+  const normalizedImages = galleryItems
+    .map((img) =>
+      typeof img === "string"
+        ? img
+        : String(img?.url ?? img?.background_image_url ?? "")
+    )
     .filter(Boolean);
+  const mainImage = String(
+    common.main_image ?? common.mainImage ?? normalizedImages[0] ?? ""
+  );
 
-  return {
-    gigId: Number(head.gigId ?? root.gigId ?? gigId),
-    title: String(head.title ?? root.title ?? ""),
-    price: Number(head.price ?? root.price ?? 0),
+  // packages: merge COMMON.package (price/days) with RIGHT PACKAGE_PANEL.packages (description)
+  const packagesObj = { STANDARD: null, DELUXE: null, PREMIUM: null };
+  const commonPkg = common.package ?? {};
+  const panelPackages = Array.isArray(packagePanel?.packages) ? packagePanel.packages : [];
+  for (const key of Object.keys(packagesObj)) {
+    const fromCommon = commonPkg[key];
+    const fromPanel = panelPackages.find(
+      (p) => String(p?.type ?? "").toUpperCase() === key
+    );
+    if (!fromCommon && !fromPanel) continue;
+    const days =
+      Number(
+        fromCommon?.days ??
+          fromPanel?.attributes?.find((a) => a?.type === "DAY")?.value ??
+          0
+      ) || 0;
+    const price = Number(fromCommon?.price ?? fromPanel?.price ?? 0) || 0;
+    if (!price && !days) continue;
+    packagesObj[key] = {
+      price,
+      days,
+      description: String(fromPanel?.description ?? fromCommon?.description ?? ""),
+    };
+  }
+
+  const categoryBreadcrumb = [];
+  if (categorySrc.root_category?.name) categoryBreadcrumb.push(categorySrc.root_category.name);
+  if (categorySrc.sub_category?.name) categoryBreadcrumb.push(categorySrc.sub_category.name);
+  if (categorySrc.third_category?.name) categoryBreadcrumb.push(categorySrc.third_category.name);
+  if (categoryBreadcrumb.length === 0 && Array.isArray(heroModule.breadcrumb)) {
+    for (const b of heroModule.breadcrumb) {
+      if (b?.name) categoryBreadcrumb.push(String(b.name));
+    }
+  }
+
+  const reviewSrc = userSrc.review ?? {};
+  const minPrice =
+    Number(common.price ?? heroModule.price ?? 0) ||
+    Number(packagesObj.STANDARD?.price ?? packagesObj.DELUXE?.price ?? packagesObj.PREMIUM?.price ?? 0);
+
+  const detail = {
+    gigId: Number(gigId),
+    title: String(common.title ?? heroModule.title ?? ""),
+    price: minPrice,
     mainImage,
     images: normalizedImages,
     seller: {
-      userId: Number(sellerSrc.userId ?? sellerSrc.id ?? 0),
-      nickname: String(sellerSrc.nickname ?? sellerSrc.userNickname ?? ""),
-      thumbnail: String(
-        sellerSrc.thumbnail ?? sellerSrc.profileImage ?? ""
-      ),
-      grade: String(sellerSrc.grade ?? sellerSrc.sellerGrade ?? ""),
-      ratingsAverage: Number(
-        sellerSrc.ratingsAverage ?? sellerSrc.reviewAverage ?? 0
-      ),
-      ratingsCount: Number(
-        sellerSrc.ratingsCount ?? sellerSrc.reviewCount ?? 0
-      ),
-      sellerDescription: String(
-        sellerSrc.sellerDescription ?? sellerSrc.description ?? ""
-      ),
+      userId: Number(userSrc.USERID ?? userSrc.userId ?? 0),
+      nickname: String(userSrc.username ?? userSrc.nickname ?? ""),
+      thumbnail: String(userSrc.image ?? userSrc.thumbnail ?? userSrc.profileImage ?? ""),
+      grade: String(userSrc.rating ?? userSrc.grade ?? userSrc.sellerGrade ?? ""),
+      ratingsAverage: Number(reviewSrc.ratingsAverage ?? reviewSrc.reviewAverage ?? 0),
+      ratingsCount: Number(reviewSrc.ratingsCount ?? reviewSrc.reviewCount ?? 0),
+      sellerDescription: String(userSrc.seller_description ?? userSrc.sellerDescription ?? ""),
     },
     packages: packagesObj,
     reviewAverage: Number(
-      head.reviewAverage ?? head.ratingsAverage ?? root.reviewAverage ?? 0
+      heroModule.ratings_average ?? reviewSrc.ratingsAverage ?? 0
     ),
     reviewCount: Number(
-      head.reviewCount ?? head.ratingsCount ?? root.reviewCount ?? 0
+      heroModule.ratings_count ?? reviewSrc.ratingsCount ?? 0
     ),
-    categoryBreadcrumb: (Array.isArray(categoryBreadcrumb)
-      ? categoryBreadcrumb
-      : []
-    ).map((c) => (typeof c === "string" ? c : String(c?.name ?? ""))),
-    descriptionHtml: String(descriptionHtml ?? ""),
+    categoryBreadcrumb,
+    descriptionHtml: String(descriptionModule?.description ?? ""),
     webUrl: `https://kmong.com/gig/${gigId}`,
   };
+
+  if (!detail.title) {
+    console.error(
+      "normalizeGigDetail: missing title; top-level keys:",
+      Object.keys(root)
+    );
+  }
+  return detail;
 }
 
 async function getGigDetail(gigId) {
@@ -208,30 +246,56 @@ async function getGigDetail(gigId) {
   return normalizeGigDetail(payload, gigId);
 }
 
+function formatResponseTime(raw) {
+  if (raw === undefined || raw === null || raw === "") return "";
+  if (typeof raw === "string") return raw;
+  const mins = Number(raw);
+  if (!Number.isFinite(mins) || mins <= 0) return "";
+  if (mins < 60) return `${mins}분 이내`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}시간 이내`;
+  const days = Math.round(hours / 24);
+  return `${days}일 이내`;
+}
+
 function normalizeSellerListItem(raw) {
+  // v2 search wraps each item as { seller, gig, portfolio }
+  const src = raw.seller ?? raw;
+  const review = src.review ?? {};
+  const area = src.activityArea;
+  const specialtiesRaw = Array.isArray(src.specialties)
+    ? src.specialties
+    : Array.isArray(src.tags)
+      ? src.tags
+      : [];
   return {
-    nickname: String(raw.nickname ?? raw.userNickname ?? ""),
+    nickname: String(src.nickname ?? src.userNickname ?? ""),
     thumbnail: String(
-      raw.thumbnail ?? raw.profileImage ?? raw.thumbnailUrl ?? ""
+      src.thumbnail ?? src.profileImage ?? src.thumbnailUrl ?? src.image ?? ""
     ),
-    grade: String(raw.grade ?? raw.sellerGrade ?? ""),
-    description: String(raw.description ?? raw.shortDescription ?? ""),
-    specialties: (Array.isArray(raw.specialties)
-      ? raw.specialties
-      : Array.isArray(raw.tags)
-        ? raw.tags
-        : []
-    )
-      .map((s) => (typeof s === "string" ? s : String(s?.name ?? "")))
+    grade: String(src.grade ?? src.sellerGrade ?? src.rating ?? ""),
+    description: String(src.description ?? src.shortDescription ?? ""),
+    specialties: specialtiesRaw
+      .map((s) =>
+        typeof s === "string" ? s : String(s?.specialtyName ?? s?.name ?? "")
+      )
       .filter(Boolean)
       .slice(0, 5),
-    reviewAverage: Number(raw.reviewAverage ?? raw.ratingsAverage ?? 0),
-    reviewCount: Number(raw.reviewCount ?? raw.ratingsCount ?? 0),
-    completedOrderCount: Number(
-      raw.completedOrderCount ?? raw.finishedOrderCount ?? 0
+    reviewAverage: Number(
+      review.reviewAverage ?? review.averageScore ?? src.reviewAverage ?? src.ratingsAverage ?? 0
     ),
-    responseTime: String(raw.responseTime ?? raw.averageResponseTime ?? ""),
-    area: String(raw.area ?? raw.activityArea ?? ""),
+    reviewCount: Number(
+      review.reviewCount ?? review.totalCount ?? src.reviewCount ?? src.ratingsCount ?? 0
+    ),
+    completedOrderCount: Number(
+      src.ordersCount ?? src.completedOrderCount ?? src.finishedOrderCount ?? 0
+    ),
+    responseTime: formatResponseTime(
+      src.responseTime ?? src.averageResponseTime ?? src.averageResponseTimesInMinutes
+    ),
+    area: String(
+      typeof area === "string" ? area : area?.areaName ?? src.area ?? ""
+    ),
   };
 }
 
@@ -246,13 +310,18 @@ async function searchSellers(keyword) {
   });
   const url = `${KMONG_API}/gig-app/seller-profile/v2/seller-profiles/search?${params.toString()}`;
   const payload = await fetchJson(url);
-  const list = extractList(payload, [
-    "sellers",
-    "sellerProfiles",
-    "items",
-    "list",
-    "data",
-  ]).slice(0, 10);
+  const page = payload?.sellerProfilePage ?? payload?.data?.sellerProfilePage;
+  const list = (
+    Array.isArray(page?.items)
+      ? page.items
+      : extractList(payload, [
+          "sellers",
+          "sellerProfiles",
+          "items",
+          "list",
+          "data",
+        ])
+  ).slice(0, 10);
   return list.map(normalizeSellerListItem);
 }
 
@@ -261,31 +330,65 @@ function normalizeSellerDetail(payload, nickname) {
   const sellerInfo = root.sellerInfo ?? root.seller ?? root;
   const profileInfo = root.profileInfo ?? root.profile ?? root;
 
-  const toStringArray = (arr) =>
-    (Array.isArray(arr) ? arr : [])
-      .map((v) => (typeof v === "string" ? v : String(v?.name ?? v?.title ?? "")))
-      .filter(Boolean);
+  const review = sellerInfo.review ?? {};
+  const order = sellerInfo.order ?? {};
+  const areaSrc = profileInfo.activityArea ?? sellerInfo.activityArea;
+  const area =
+    typeof areaSrc === "string" ? areaSrc : String(areaSrc?.areaName ?? "");
 
-  const careers = toStringArray(profileInfo.careers ?? profileInfo.career);
-  const educations = toStringArray(
-    profileInfo.educations ?? profileInfo.education
-  );
-  const specialties = toStringArray(
-    profileInfo.specialties ?? sellerInfo.specialties
-  );
-  const skills = toStringArray(profileInfo.skills ?? sellerInfo.skills);
+  const specialtiesArr = [];
+  const specialtiesSrc = profileInfo.specialties ?? sellerInfo.specialties ?? [];
+  if (Array.isArray(specialtiesSrc)) {
+    for (const entry of specialtiesSrc) {
+      if (typeof entry === "string") {
+        specialtiesArr.push(entry);
+      } else if (entry && Array.isArray(entry.items)) {
+        for (const item of entry.items) {
+          if (item?.name) specialtiesArr.push(String(item.name));
+        }
+      } else if (entry?.specialtyName) {
+        specialtiesArr.push(String(entry.specialtyName));
+      } else if (entry?.name) {
+        specialtiesArr.push(String(entry.name));
+      }
+    }
+  }
+
+  const skills = (Array.isArray(profileInfo.skills) ? profileInfo.skills : [])
+    .map((s) => (typeof s === "string" ? s : String(s?.skillName ?? s?.name ?? "")))
+    .filter(Boolean);
+
+  const careers = (Array.isArray(profileInfo.careers) ? profileInfo.careers : [])
+    .map((c) => {
+      if (typeof c === "string") return c;
+      const company = c?.company ?? c?.companyName ?? "";
+      const position = c?.position ?? c?.department ?? "";
+      const year = c?.year;
+      const month = c?.month;
+      const freelancer = c?.isFreelancer ? "프리랜서" : "";
+      const period =
+        Number(year) || Number(month)
+          ? `${Number(year) ? `${year}년 ` : ""}${Number(month) ? `${month}개월` : ""}`.trim()
+          : "";
+      const parts = [company || freelancer, position, period].filter(Boolean);
+      return parts.join(" · ");
+    })
+    .filter(Boolean);
+
+  const educations = (Array.isArray(profileInfo.educations) ? profileInfo.educations : [])
+    .map((e) => {
+      if (typeof e === "string") return e;
+      const uni = e?.university ?? "";
+      const major = e?.major ?? "";
+      return [uni, major].filter(Boolean).join(" · ");
+    })
+    .filter(Boolean);
 
   return {
-    nickname: String(
-      sellerInfo.nickname ?? sellerInfo.userNickname ?? nickname
-    ),
-    thumbnail: String(
-      sellerInfo.thumbnail ?? sellerInfo.profileImage ?? ""
-    ),
+    nickname: String(sellerInfo.nickname ?? sellerInfo.userNickname ?? nickname),
+    thumbnail: String(sellerInfo.thumbnail ?? sellerInfo.profileImage ?? ""),
     grade: String(sellerInfo.grade ?? sellerInfo.sellerGrade ?? ""),
-    area: String(
-      profileInfo.area ?? profileInfo.activityArea ?? sellerInfo.area ?? ""
-    ),
+    area,
     description: String(
       profileInfo.description ??
         profileInfo.sellerDescription ??
@@ -293,22 +396,32 @@ function normalizeSellerDetail(payload, nickname) {
         ""
     ),
     ratingsAverage: Number(
-      sellerInfo.ratingsAverage ?? sellerInfo.reviewAverage ?? 0
+      review.averageScore ?? review.ratingsAverage ?? review.reviewAverage ?? 0
     ),
     ratingsCount: Number(
-      sellerInfo.ratingsCount ?? sellerInfo.reviewCount ?? 0
+      review.totalCount ?? review.ratingsCount ?? review.reviewCount ?? 0
     ),
     satisfaction: Number(
-      sellerInfo.satisfaction ?? sellerInfo.satisfactionRate ?? 0
+      review.satisfactionPoint ??
+        sellerInfo.satisfactionPoint ??
+        sellerInfo.satisfaction ??
+        0
     ),
-    responseTime: String(
-      sellerInfo.responseTime ?? sellerInfo.averageResponseTime ?? ""
+    responseTime: formatResponseTime(
+      sellerInfo.averageResponseTimesInMinutes ??
+        sellerInfo.responseTime ??
+        sellerInfo.averageResponseTime
     ),
     completedOrderCount: Number(
-      sellerInfo.completedOrderCount ?? sellerInfo.finishedOrderCount ?? 0
+      order.completedOrdersCount ??
+        sellerInfo.completedOrderCount ??
+        sellerInfo.finishedOrderCount ??
+        0
     ),
-    careerYears: Number(profileInfo.careerYears ?? 0),
-    specialties,
+    careerYears: Number(
+      profileInfo.totalCareerYears ?? profileInfo.careerYears ?? 0
+    ),
+    specialties: specialtiesArr,
     skills,
     careers,
     educations,
